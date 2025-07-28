@@ -1,0 +1,8 @@
+[package]
+name = "minimax_toruney"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+arrayvec = "0.7.6"
+clap = { version = "4.5.41", features = ["derive"] }
