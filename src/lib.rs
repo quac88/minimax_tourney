@@ -6,7 +6,7 @@ use arrayvec::ArrayVec;
 mod moves;
 use core::cmp::Reverse;
 
-const MOVE_LIMIT: u16 = 25;
+const MOVE_LIMIT: u8 = 25;
 
 thread_local! {
     // Thread-local storage for the current search depth
@@ -47,7 +47,7 @@ pub struct Position {
     pub w2: u8,
     pub b1: u8,
     pub b2: u8,
-    pub moves_played: u16,
+    pub moves_played: u8,
 }
 
 // implement Display trait for Position to pretty print the board
