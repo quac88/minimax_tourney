@@ -36,13 +36,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // get args from board1.txt if it exists
-    let contents = fs::read_to_string(&in_path)?;
-    let mut parts = contents.split_whitespace();
+    let contents: String = fs::read_to_string(&in_path)?;
+    let mut parts: std::str::SplitWhitespace<'_> = contents.split_whitespace();
 
     // token 1: concatenated piece positions, e.g. "1278"
-    let pos_token = parts.next()
+    let pos_token: &str = parts.next()
         .expect("input file must contain board positions");
-    let depth_token = parts.next()
+    let depth_token: &str = parts.next()
         .expect("input file must contain a search depth");
 
     if parts.next().is_some() {
@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let digits: Vec<u8> = pos_token
         .chars()
-        .map(|c| c.to_digit(10).unwrap() as u8)
+        .map(|c: char| c.to_digit(10).unwrap() as u8)
         .collect();
     let [w1, w2, b1, b2] = <[u8; 4]>::try_from(digits).unwrap();
 
@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .parse()
         .unwrap_or_else(|_| panic!("couldn't parse depth `{depth_token}`"));
 
-    let start_time = Instant::now();
+    let start_time: Instant = Instant::now();
     // set the depth for minimax
     let max_depth: u8 = depth;
     
