@@ -36,29 +36,35 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // get args from board1.txt if it exists
-    let contents: String = fs::read_to_string(&in_path)?;
-    let numbers: Vec<u8> = contents
-        .split_whitespace()
-        .map(|raw: &str| {
-            //strip leading zeros on depth args (008 -> 8)
-            let s: &str = raw.trim_start_matches('0');
-            let cleaned = if s.is_empty() { "0" } else { s };
-            cleaned.parse::<u8>()
-               .unwrap_or_else(|_| panic!("couldn't parse `{raw}` as u8"))
-        })
-        .collect(); // collect into a vector
+    let contents = fs::read_to_string(&in_path)?;
+    let mut parts = contents.split_whitespace();
 
-    // make sure file is of correct format
-    if numbers.len() != 5 {
-        panic!(
-            "expected 5 arguments for board position and depth in input.txt, but found {}",
-            numbers.len()
-        );
+    // token 1: concatenated piece positions, e.g. "1278"
+    let pos_token = parts.next()
+        .expect("input file must contain board positions");
+    let depth_token = parts.next()
+        .expect("input file must contain a search depth");
+
+    if parts.next().is_some() {
+        panic!("input file has extra data; expected exactly two tokens");
     }
 
-    // destructure the numbers into variables
-    let [w1, w2, b1, b2, depth] =
-        <[u8; 5]>::try_from(numbers).expect("slice with incorrect length");
+    // parse the four digits
+    if pos_token.len() != 4 || !pos_token.chars().all(|c| c.is_ascii_digit()) {
+        panic!("board positions must be exactly 4 digits (e.g. 1278)");
+    }
+
+    let digits: Vec<u8> = pos_token
+        .chars()
+        .map(|c| c.to_digit(10).unwrap() as u8)
+        .collect();
+    let [w1, w2, b1, b2] = <[u8; 4]>::try_from(digits).unwrap();
+
+    // depth (allow leading zeros like "060")
+    let depth: u8 = depth_token
+        .trim_start_matches('0')
+        .parse()
+        .unwrap_or_else(|_| panic!("couldn't parse depth `{depth_token}`"));
 
     let start_time = Instant::now();
     // set the depth for minimax
