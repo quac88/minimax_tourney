@@ -6,7 +6,7 @@ use arrayvec::ArrayVec;
 mod moves;
 use core::cmp::Reverse;
 
-const MOVE_LIMIT: u8 = 25;
+const MOVE_LIMIT: u8 = 50;
 
 thread_local! {
     // Thread-local storage for the current search depth
@@ -53,7 +53,7 @@ pub struct Position {
 // implement Display trait for Position to pretty print the board
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} {} {}", self.w1, self.w2, self.b1, self.b2)
+        write!(f, "{}{}{}{}", self.w1, self.w2, self.b1, self.b2)
     }
 }
 
@@ -80,7 +80,7 @@ impl Position {
 
     pub fn estimate_position(&self) -> i32 {
         EVAL_COUNT.with(|c: &Cell<usize>| c.set(c.get() + 1)); // increment the evaluation counter
-        if self.moves_played >= 50 {
+        if self.moves_played >= MOVE_LIMIT {
             return -100;
         }
         if self.white_win() {
