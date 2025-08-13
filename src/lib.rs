@@ -1,8 +1,8 @@
 //lib.rs
+use arrayvec::ArrayVec;
 use clap::Parser;
 use std::cell::Cell;
 use std::fmt;
-use arrayvec::ArrayVec;
 mod moves;
 use core::cmp::Reverse;
 
@@ -15,16 +15,16 @@ thread_local! {
 
 type MoveList = ArrayVec<Position, 6>; // max 6 moves in a game
 
-/// Call at the start of every search.
+// Call at the start of every search.
 pub fn reset_eval_counter() {
     EVAL_COUNT.with(|c: &Cell<usize>| c.set(0));
 }
 
 // .with method yeilds a reference to the contained value which csannot outlive the current thread or escape the given closure.
 
-/// Call after the search to read the number of leaves visited.
+// Call after the search to read the number of leaves visited.
 pub fn eval_counter() -> usize {
-    EVAL_COUNT.with(|c: &Cell<usize>| c.get()) 
+    EVAL_COUNT.with(|c: &Cell<usize>| c.get())
 }
 
 // Command line interface for the game
@@ -60,7 +60,13 @@ impl fmt::Display for Position {
 // implement Position methods
 impl Position {
     pub fn new(w1: u8, w2: u8, b1: u8, b2: u8) -> Position {
-        Position { w1, w2, b1, b2, moves_played: 0 }
+        Position {
+            w1,
+            w2,
+            b1,
+            b2,
+            moves_played: 0,
+        }
     }
 
     pub fn white_win(&self) -> bool {
@@ -73,9 +79,13 @@ impl Position {
 
     #[inline(always)]
     fn static_eval(&self) -> i32 {
-        if self.white_win() { 100 }
-        else if self.black_win() { -100 }
-        else { (self.w1 as i32 + self.w2 as i32 + self.b1 as i32 + self.b2 as i32) - 18 }
+        if self.white_win() {
+            100
+        } else if self.black_win() {
+            -100
+        } else {
+            (self.w1 as i32 + self.w2 as i32 + self.b1 as i32 + self.b2 as i32) - 18
+        }
     }
 
     pub fn estimate_position(&self) -> i32 {
@@ -99,32 +109,42 @@ impl Position {
         }
 
         // hard wins
-        if self.white_win() { return  100; }
-        if self.black_win() { return -100; }
+        if self.white_win() {
+            return 100;
+        }
+        if self.black_win() {
+            return -100;
+        }
 
-        // ---------- step 2: 1 white + 1 black pawn on the main board? ----------
+        //
         let white_squares: [u8; 2] = [self.w1, self.w2];
         let black_squares: [u8; 2] = [self.b1, self.b2];
 
         let white_on: Vec<u8> = white_squares
-            .iter().copied().filter(|&sq| (1..=8).contains(&sq)).collect();
+            .iter()
+            .copied()
+            .filter(|&sq| (1..=8).contains(&sq))
+            .collect();
         let black_on: Vec<u8> = black_squares
-            .iter().copied().filter(|&sq| (1..=8).contains(&sq)).collect();
+            .iter()
+            .copied()
+            .filter(|&sq| (1..=8).contains(&sq))
+            .collect();
 
         if white_on.len() == 1 && black_on.len() == 1 {
             let sum: i32 = white_on[0] as i32 + black_on[0] as i32;
             let even: bool = sum % 2 == 0;
 
             let white_wins: bool = if even {
-                // even sum ⇒ White wins if Black is to move
+                // even sum - white wins if black is to move
                 !white_to_move
             } else {
-                // odd sum  ⇒ White wins if White is to move
+                // odd sum  - white wins if white is to move
                 white_to_move
             };
             return if white_wins { 100 } else { -100 };
         }
-        // ---------- step 3: fallback ----------
+        // original heuristic otherwise
         (self.w1 as i32 + self.w2 as i32 + self.b1 as i32 + self.b2 as i32) - 18
     }
 
@@ -166,7 +186,7 @@ impl Position {
         }
 
         if kids.len() <= 2 {
-            return kids;       
+            return kids;
         }
 
         if is_max {
@@ -203,18 +223,30 @@ impl Position {
     }
 
     // alpha-beta version - white
-    pub fn max_min_ab(pos: &Position, depth: u8, mut alpha: i32, beta: i32, ply: usize, pv: Option<Position>) -> i32 {
+    pub fn max_min_ab(
+        pos: &Position,
+        depth: u8,
+        mut alpha: i32,
+        beta: i32,
+        ply: usize,
+        pv: Option<Position>,
+    ) -> i32 {
         if depth == 0 || pos.white_win() || pos.black_win() {
             return pos.estimate_position();
         }
 
         let mut v: i32 = i32::MIN;
-        for (i, child) in
-            pos.ordered_children(true, pv).into_iter().enumerate() {
-        // only the *first* child of this node gets the pv chain
-        let child_pv = if i == 0 { pv } else { None };
-        v = v.max(Position::min_max_ab(&child, depth-1,
-                                    alpha, beta, ply+1, child_pv)); // v is the max between the current v and the min of the children
+        for (i, child) in pos.ordered_children(true, pv).into_iter().enumerate() {
+            // only the *first* child of this node gets the pv chain
+            let child_pv = if i == 0 { pv } else { None };
+            v = v.max(Position::min_max_ab(
+                &child,
+                depth - 1,
+                alpha,
+                beta,
+                ply + 1,
+                child_pv,
+            )); // v is the max between the current v and the min of the children
             alpha = alpha.max(v);
             if alpha >= beta {
                 break;
@@ -223,16 +255,29 @@ impl Position {
         v
     }
 
-    pub fn max_min_ab_improved(pos: &Position, depth: u8, mut alpha: i32, beta: i32, ply: usize, pv: Option<Position>) -> i32 {
+    pub fn max_min_ab_improved(
+        pos: &Position,
+        depth: u8,
+        mut alpha: i32,
+        beta: i32,
+        ply: usize,
+        pv: Option<Position>,
+    ) -> i32 {
         if depth == 0 || pos.white_win() || pos.black_win() {
             return pos.estimate_position_improved(true);
         }
 
         let mut v: i32 = i32::MIN;
-        for (i, child) in 
-                pos.ordered_children(true, pv).into_iter().enumerate() {
+        for (i, child) in pos.ordered_children(true, pv).into_iter().enumerate() {
             let child_pv = if i == 0 { pv } else { None };
-            v = v.max(Position::min_max_ab_improved(&child, depth - 1, alpha, beta, ply + 1, child_pv));
+            v = v.max(Position::min_max_ab_improved(
+                &child,
+                depth - 1,
+                alpha,
+                beta,
+                ply + 1,
+                child_pv,
+            ));
             alpha = alpha.max(v);
             if alpha >= beta {
                 break; // beta cut-off
@@ -267,17 +312,30 @@ impl Position {
     }
 
     //alpha-beta min_max version - black
-    pub fn min_max_ab(pos: &Position, depth: u8, alpha: i32, mut beta: i32, ply: usize, pv: Option<Position>) -> i32 {
+    pub fn min_max_ab(
+        pos: &Position,
+        depth: u8,
+        alpha: i32,
+        mut beta: i32,
+        ply: usize,
+        pv: Option<Position>,
+    ) -> i32 {
         if depth == 0 || pos.white_win() || pos.black_win() {
             return pos.estimate_position();
         }
 
         let mut v: i32 = i32::MAX;
-        for (i, child) in
-                pos.ordered_children(false, pv).into_iter().enumerate() {
+        for (i, child) in pos.ordered_children(false, pv).into_iter().enumerate() {
             // only the *first* child of this node gets the pv chain
             let child_pv: Option<Position> = if i == 0 { pv } else { None };
-            v = v.min(Position::max_min_ab(&child, depth - 1, alpha, beta, ply + 1, child_pv)); // v is the min between the current v and the max of the children
+            v = v.min(Position::max_min_ab(
+                &child,
+                depth - 1,
+                alpha,
+                beta,
+                ply + 1,
+                child_pv,
+            )); // v is the min between the current v and the max of the children
             beta = beta.min(v);
             if beta <= alpha {
                 break; // alpha cut-off
@@ -286,17 +344,30 @@ impl Position {
         v
     }
 
-    pub fn min_max_ab_improved(pos: &Position, depth: u8, alpha: i32, mut beta: i32, ply: usize, pv: Option<Position>) -> i32 {
+    pub fn min_max_ab_improved(
+        pos: &Position,
+        depth: u8,
+        alpha: i32,
+        mut beta: i32,
+        ply: usize,
+        pv: Option<Position>,
+    ) -> i32 {
         if depth == 0 || pos.white_win() || pos.black_win() {
             return pos.estimate_position_improved(false);
         }
 
         let mut v: i32 = i32::MAX;
-        for (i, child) in
-                pos.ordered_children(false, pv).into_iter().enumerate() {
+        for (i, child) in pos.ordered_children(false, pv).into_iter().enumerate() {
             // only the *first* child of this node gets the pv chain
             let child_pv: Option<Position> = if i == 0 { pv } else { None };
-            v = v.min(Position::max_min_ab_improved(&child, depth - 1, alpha, beta, ply + 1, child_pv));
+            v = v.min(Position::max_min_ab_improved(
+                &child,
+                depth - 1,
+                alpha,
+                beta,
+                ply + 1,
+                child_pv,
+            ));
             beta = beta.min(v);
             if beta <= alpha {
                 break; // alpha cut-off
@@ -320,17 +391,14 @@ impl Position {
         Position::white_children(pos)
             .into_iter()
             .map(|child: Position| {
-                let score: i32 =
-                    Position::min_max_improved(&child, depth.saturating_sub(1)); // we use saturating_sub to elimate possibility of underflow on u8 // there is a case where depth is zero. saturating_sub() removes the need to add if depth > 0 { depth - 1 } else { 0 }.
+                let score: i32 = Position::min_max_improved(&child, depth.saturating_sub(1)); // we use saturating_sub to elimate possibility of underflow on u8 // there is a case where depth is zero. saturating_sub() removes the need to add if depth > 0 { depth - 1 } else { 0 }.
                 (child, score)
             })
             .max_by_key(|&(_, score)| score)
     }
 
     // best white move using min_max + alpha-beta
-    pub fn best_white_move_ab(pos: &Position, max_depth: u8)
-        -> Option<(Position, i32)> {
-
+    pub fn best_white_move_ab(pos: &Position, max_depth: u8) -> Option<(Position, i32)> {
         let mut best: Option<(Position, i32)> = None;
 
         for d in 1..=max_depth {
@@ -342,8 +410,8 @@ impl Position {
                         d.saturating_sub(1),
                         i32::MIN,
                         i32::MAX,
-                        1,                          // ply
-                        best.map(|(m, _)| m)        // pv from previous iter
+                        1,                    // ply
+                        best.map(|(m, _)| m), // pv from previous iter
                     );
                     (child, score)
                 })
@@ -352,9 +420,7 @@ impl Position {
         best
     }
 
-    pub fn best_white_move_ab_improved(pos: &Position, max_depth: u8)
-        -> Option<(Position, i32)> {
-
+    pub fn best_white_move_ab_improved(pos: &Position, max_depth: u8) -> Option<(Position, i32)> {
         let mut best: Option<(Position, i32)> = None;
 
         for d in 1..=max_depth {
@@ -366,8 +432,8 @@ impl Position {
                         d.saturating_sub(1),
                         i32::MIN,
                         i32::MAX,
-                        1,                          // ply
-                        best.map(|(m, _)| m)        // pv from previous iter
+                        1,                    // ply
+                        best.map(|(m, _)| m), // pv from previous iter
                     );
                     (child, score)
                 })
@@ -397,10 +463,7 @@ impl Position {
     }
 
     // best white move using min_max + alpha-beta
-    pub fn best_black_move_ab(
-        pos: &Position,
-        max_depth: u8,
-    ) -> Option<(Position, i32)> {
+    pub fn best_black_move_ab(pos: &Position, max_depth: u8) -> Option<(Position, i32)> {
         let mut best: Option<(Position, i32)> = None;
 
         for d in 1..=max_depth {
@@ -413,20 +476,17 @@ impl Position {
                         d.saturating_sub(1),
                         i32::MIN,
                         i32::MAX,
-                        1,                         // ply
-                        best.map(|(m, _)| m),      // PV move from previous iter
+                        1,                    // ply
+                        best.map(|(m, _)| m), // PV move from previous iter
                     );
                     (child, score)
                 })
-                .min_by_key(|&(_, s)| s);          // Black wants the lowest score
+                .min_by_key(|&(_, s)| s); // Black wants the lowest score
         }
         best
     }
 
-    pub fn best_black_move_ab_improved(
-        pos: &Position,
-        max_depth: u8,
-    ) -> Option<(Position, i32)> {
+    pub fn best_black_move_ab_improved(pos: &Position, max_depth: u8) -> Option<(Position, i32)> {
         let mut best: Option<(Position, i32)> = None;
 
         for d in 1..=max_depth {
@@ -439,17 +499,16 @@ impl Position {
                         d.saturating_sub(1),
                         i32::MIN,
                         i32::MAX,
-                        1,                         // ply
-                        best.map(|(m, _)| m),      // PV move from previous iter
+                        1,                    // ply
+                        best.map(|(m, _)| m), // PV move from previous iter
                     );
                     (child, score)
                 })
-                .min_by_key(|&(_, s)| s);          // Black wants the lowest score
+                .min_by_key(|&(_, s)| s); // Black wants the lowest score
         }
         best
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -465,10 +524,8 @@ mod tests {
         }
 
         let mut occ: HashSet<u8> = HashSet::new();
-        let white_home_clash =
-            (p.b1 == 9 || p.b2 == 9) && (p.w1 == 9 || p.w2 == 9);
-        let black_home_clash =
-            p.w1 == 0 || p.w2 == 0; // white can never be on 0 legally
+        let white_home_clash = (p.b1 == 9 || p.b2 == 9) && (p.w1 == 9 || p.w2 == 9);
+        let black_home_clash = p.w1 == 0 || p.w2 == 0; // white can never be on 0 legally
 
         if white_home_clash || black_home_clash {
             return false;
@@ -477,7 +534,7 @@ mod tests {
         // check duplicates outside home squares
         for &sq in [p.w1, p.w2, p.b1, p.b2].iter() {
             if sq == 0 || sq == 9 {
-                continue; 
+                continue;
             }
             if !occ.insert(sq) {
                 // duplication found
@@ -487,7 +544,7 @@ mod tests {
         true
     }
 
-     // Helper function to assert that all positions in a MoveList are legal
+    // Helper function to assert that all positions in a MoveList are legal
     fn assert_all_legal(parent: &Position, moves: MoveList) {
         for child in moves {
             assert!(
@@ -505,7 +562,13 @@ mod tests {
             for w2 in 1..=9 {
                 for b1 in 0..=8 {
                     for b2 in 0..=8 {
-                        let p = Position { w1, w2, b1, b2, moves_played: 0 };
+                        let p = Position {
+                            w1,
+                            w2,
+                            b1,
+                            b2,
+                            moves_played: 0,
+                        };
                         if !legal_position(&p) {
                             continue; // skip impossible starting positions
                         }
@@ -524,10 +587,10 @@ mod tests {
     }
     #[test]
     fn improved_eval_parity_rule() {
-        // White on square 1, Black on square 4 → sum = 5 (odd)
-        let p = Position::new(1, 9, 4, 0);   // exactly one pawn each on board
+        // White on square 1, Black on square 4 - sum = 5 (odd)
+        let p = Position::new(1, 9, 4, 0); // exactly one pawn each on board
 
-        // White to move on an odd sum ⇒ White should win
+        // White to move on an odd sum - White should win
         assert_eq!(p.estimate_position_improved(true), 100);
 
         // Black to move on an odd sum ⇒ Black should win

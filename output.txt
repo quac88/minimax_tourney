@@ -1,0 +1,4 @@
+1378
+Positions evaluated by static estimation: 198184225
+Search depth: 62
+MINIMAX estimate: -100

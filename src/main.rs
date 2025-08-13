@@ -35,21 +35,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         std::process::exit(1);
     }
 
-    // get args from board1.txt if it exists
+    // get args from input.txt if it exists
     let contents: String = fs::read_to_string(&in_path)?;
     let mut parts: std::str::SplitWhitespace<'_> = contents.split_whitespace();
 
-    // token 1: concatenated piece positions, e.g. "1278"
-    let pos_token: &str = parts.next()
+    // get the position token
+    let pos_token: &str = parts
+        .next()
         .expect("input file must contain board positions");
-    let depth_token: &str = parts.next()
+    let depth_token: &str = parts
+        .next()
         .expect("input file must contain a search depth");
 
     if parts.next().is_some() {
         panic!("input file has extra data; expected exactly two tokens");
     }
 
-    // parse the four digits
+    // parse the four piece digits
     if pos_token.len() != 4 || !pos_token.chars().all(|c| c.is_ascii_digit()) {
         panic!("board positions must be exactly 4 digits (e.g. 1278)");
     }
@@ -69,7 +71,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start_time: Instant = Instant::now();
     // set the depth for minimax
     let max_depth: u8 = depth;
-    
+
     // create the starting position
     let start: Position = Position::new(w1, w2, b1, b2);
 

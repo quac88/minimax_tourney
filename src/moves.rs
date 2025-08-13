@@ -1,6 +1,6 @@
 // moves.rs
 
-use super::{Position, MoveList, ArrayVec};
+use super::{ArrayVec, MoveList, Position};
 
 impl Position {
     // return every legal state reached by one move of w1
@@ -8,11 +8,11 @@ impl Position {
         let next_move = self.moves_played + 1;
         // is w1 already home
         if self.w1 == 9 {
-            return MoveList::new();            
+            return MoveList::new();
         }
 
         // next is just an empty vector that will hold all the positions after a legal w1 move
-        let mut next: ArrayVec<Position, 6>  = MoveList::new();
+        let mut next: ArrayVec<Position, 6> = MoveList::new();
         let (w1, w2, b1, b2) = (self.w1, self.w2, self.b1, self.b2);
 
         // helper to test if a square is free. A square in this program refers to any position in the game board array
@@ -25,7 +25,13 @@ impl Position {
 
         // if w1 is at the last square (8), move it to the home square (9)
         if w1 == 8 {
-            next.push(Position { w1: 9, w2, b1, b2, moves_played: next_move }); // Vec doesn't implement += for single items, so we use push to add exactly one item in O(1)
+            next.push(Position {
+                w1: 9,
+                w2,
+                b1,
+                b2,
+                moves_played: next_move,
+            }); // Vec doesn't implement += for single items, so we use push to add exactly one item in O(1)
         // if the square after w1 is free, move w1 to the next square
         } else if free(w1 + 1) {
             next.push(Position {
@@ -165,14 +171,14 @@ impl Position {
                 b2,
                 moves_played: next_move,
             });
-        } 
+        }
         next
     }
 
     pub fn w2_step(&self) -> MoveList {
         let next_move = self.moves_played + 1;
         if self.w2 == 9 {
-            return MoveList::new()
+            return MoveList::new();
         }
 
         let mut next: ArrayVec<Position, 6> = MoveList::new();
@@ -185,7 +191,13 @@ impl Position {
                 && (1..=9).contains(&square)
         };
         if w2 == 8 {
-            next.push(Position { w1, w2: 9, b1, b2, moves_played: next_move });
+            next.push(Position {
+                w1,
+                w2: 9,
+                b1,
+                b2,
+                moves_played: next_move,
+            });
         } else if free(w2 + 1) {
             next.push(Position {
                 w1,
@@ -259,8 +271,7 @@ impl Position {
                         b2,
                         moves_played: next_move,
                     });
-                } else
-                if dest != 8 && free(8) {
+                } else if dest != 8 && free(8) {
                     // move b2 back to 8
                     next.push(Position {
                         w1,
@@ -324,7 +335,7 @@ impl Position {
                 b2,
                 moves_played: next_move,
             });
-        } 
+        }
         next
     }
 
@@ -334,7 +345,7 @@ impl Position {
             return MoveList::new();
         }
 
-        let mut next: ArrayVec<Position, 6>  = MoveList::new();
+        let mut next: ArrayVec<Position, 6> = MoveList::new();
         let (w1, w2, b1, b2) = (self.w1, self.w2, self.b1, self.b2);
 
         let free = |square: u8| {
@@ -345,7 +356,13 @@ impl Position {
         };
 
         if b1 == 1 {
-            next.push(Position { w1, w2, b1: 0, b2, moves_played: next_move });
+            next.push(Position {
+                w1,
+                w2,
+                b1: 0,
+                b2,
+                moves_played: next_move,
+            });
         } else if free(b1 - 1) {
             next.push(Position {
                 w1,
@@ -484,17 +501,17 @@ impl Position {
                 b2,
                 moves_played: next_move,
             });
-        } 
+        }
         next
     }
 
     pub fn b2_step(&self) -> MoveList {
         let next_move = self.moves_played + 1;
         if self.b2 == 0 {
-            return MoveList::new()
+            return MoveList::new();
         }
 
-        let mut next: ArrayVec<Position, 6>  = MoveList::new();
+        let mut next: ArrayVec<Position, 6> = MoveList::new();
         let (w1, w2, b1, b2) = (self.w1, self.w2, self.b1, self.b2);
 
         let free = |square: u8| {
@@ -505,7 +522,13 @@ impl Position {
         };
 
         if b2 == 1 {
-            next.push(Position { w1, w2, b1, b2: 0, moves_played: next_move });
+            next.push(Position {
+                w1,
+                w2,
+                b1,
+                b2: 0,
+                moves_played: next_move,
+            });
         } else if free(b2 - 1) {
             next.push(Position {
                 w1,
