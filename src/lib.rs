@@ -593,7 +593,7 @@ mod tests {
         // White to move on an odd sum - White should win
         assert_eq!(p.estimate_position_improved(true), 100);
 
-        // Black to move on an odd sum ⇒ Black should win
+        // Black to move on an odd sum - Black should win
         assert_eq!(p.estimate_position_improved(false), -100);
     }
 }
